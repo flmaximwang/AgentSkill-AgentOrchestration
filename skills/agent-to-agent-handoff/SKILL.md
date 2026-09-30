@@ -27,6 +27,9 @@ side tends to read it as its own job.
 
 ## Step 1 — Work out which agent you are, before acting
 
+Input: the inbound message (thread id, sender id, mentions). Output: your own bot identity plus the
+half of the work that is yours.
+
 ```bash
 # which profiles this gateway serves, and the per-profile platform state
 cat "$HERMES_HOME/gateway_state.json" | python3 -m json.tool | head -40
@@ -57,13 +60,19 @@ never edit the artifact the other side is still writing.
 
 ## Step 2 — Read the whole handoff before building
 
+Input: every file the other side left (spec, brief, its own notes). Output: the acceptance checklist,
+plus the list of claims you will re-measure.
+
 Handoffs arrive in pieces (page markers such as `(1/2)` / `(2/2)`) plus a long file in the repo. Read
 the file end to end, including its "what I did not verify" rows — those are where your corrections
 come from.
 
 ## Step 3 — Build to the handoff's acceptance checklist, and self-check it in code
 
-A reviewer's checklist is usually machine-checkable. Run it and report pass/fail per item instead of
+Input: the checklist from Step 2. Output: the built artifact plus a per-item pass/fail line from the
+script, not an assertion of compliance.
+
+A reviewer's checklist is machine-checkable. Run it and report pass/fail per item instead of
 asserting compliance — `scripts/check_skill_package.py <skill-dir | repo-root>` prints every item
 below per skill (and the local scan verdict) and exits non-zero on any failure:
 
@@ -78,17 +87,23 @@ below per skill (and the local scan verdict) and exits non-zero on any failure:
 
 ## Step 4 — Verify the handoff's own claims; report every discrepancy
 
+Input: the claims list from Step 2. Output: one line per claim — their value, your measured value, and
+where you measured it.
+
 This is the currency of the review loop. **Re-measure the handoff's numbers from the live sources
 before writing them into the artifact**, and list each disagreement with the value you measured and
 where you measured it. The spec author wants this; it is the difference between reviewing a document
 and rubber-stamping it.
 
-Drift classes to expect: counts that moved since the brief was written (files added or deleted, rows
+Drift classes measured so far: counts that moved since the brief was written (files added or deleted, rows
 grown); a trap note contradicted by a later finding in the same document; a "current status" section
 that a subsequent fix already invalidated; a flag or default the document describes that a newer
 measurement overturned.
 
 ## Step 5 — Deliver, then stay in your role
+
+Input: the verified artifact plus the Step 4 discrepancy list. Output: the filesystem handoff and the
+4-section report.
 
 - Hand the artifact back **through the filesystem** (the shared repo), not through chat prose — the
   reviewer needs a diff, not a summary.
@@ -128,7 +143,7 @@ middle column first, the right column only when that fails, and say in the repor
   say so — staging it silently claims authorship and buries their intent.
 - **Stage by pathspec.** A shared clone carries the other agent's unpushed commits and working-tree
   edits, and `git add -A` sweeps them into your commit.
-- Before editing files the other agent may also touch, `git status` + `git fetch` first, and diff
+- Before editing a file the other agent also touches: `git status` + `git fetch` first, and diff
   before overwriting a copy that may be ahead of yours.
 
 ## Pitfalls
