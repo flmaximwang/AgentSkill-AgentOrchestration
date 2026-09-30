@@ -12,11 +12,12 @@ Agent 协作类 skill 的合集。本机上每个 Hermes profile 是 Discord 里
 |---|---|---|
 | [agent-to-agent-handoff](skills/agent-to-agent-handoff/SKILL.md) | **构建方一半**：别的 agent 把任务或经验简报交给你时的全套流程——先钉死自己是谁 → 整篇读完 handoff → 按验收清单机器自检 → 重测对方报的数字 → 经文件系统交回 | `scripts/check_skill_package.py <skill-dir \| repo-root>` |
 | [agent-handoff-and-review](skills/agent-handoff-and-review/SKILL.md) | **两侧全程**：分工与验收的程序（产出方写交接件 / 构建方复核 / 评审方独立复现 / 落地门），外加跨 agent 的 git 纪律与「把对方 profile 里的改动迁回仓库」的 Step 6 | `templates/handoff-brief.md` |
+| [agent-handoff-spec](skills/agent-handoff-spec/SKILL.md) | **产出方那一半**：用户把活拆给另一方时，交付物是「规格」不是「产物」——交接件骨架八节、证据规则（实测/待核/报错原文照抄）、交付格式 | `templates/handoff-spec.md` |
 
 装进 Hermes（三段式标识符，按仓库内路径，**不需要 tap**；`--category` 只决定落点）：
 
 ```bash
-for s in agent-to-agent-handoff agent-handoff-and-review; do
+for s in agent-to-agent-handoff agent-handoff-and-review agent-handoff-spec; do
   hermes skills install "flmaximwang/AgentSkill-AgentOrchestration/skills/$s" --category agent-orchestration -y
 done
 ```
@@ -30,9 +31,9 @@ done
 lock 条目，rev 随 main）。**本仓库是它们唯一的 source of truth**：改内容改这里，`git push` 后
 `hermes skills update <name>` 取新版。
 
-> 未决：`agent-handoff-and-review` 在默认 profile 里还留着一份**本地副本**
-> （`skills/autonomous-ai-agents/agent-handoff-and-review`，无 lock 条目，由另一个会话的 curator 在写）。
-> 两份同名并存会漂移；是否退役那份本地副本待用户拍板。
+> 三个 skill 原来的本地副本都已退役（`agent-to-agent-handoff` 的 `autonomous-ai-agents/` 副本直接删；
+> `agent-handoff-and-review` 与 `agent-handoff-spec` 先 `tar` 备份到
+> `~/.hermes/cache/scratch/retired-local-skills/` 再删）——同名两份并存必然漂移。
 
 ## skills/agent-to-agent-handoff
 
@@ -96,3 +97,28 @@ push / 安装 / 删除。四条不变式：产出方出交接件（任务书 + �
 > 无 lock 条目），迁入本仓库时只做了一处**为过扫描闸**的改写——把正文里两处 home 相对字面路径的 ssh
 > 配置/密钥名改写成文字描述（`ssh_dir_access` 是 high，community 源上会拦安装），语义未变。
 > 装进 Hermes 的命令见上面的安装块；扫描判决：`safe`。
+
+## skills/agent-handoff-spec
+
+**产出方那一半**（原为 rdm-assistance profile 的本地技能）：用户说「你把经验总结出来，交给它去做」时，
+你的交付物是**规格，不是产物**——从「交由 X 构建」这句起就停手，只做三件事：出规格 → 交付给用户 →
+按验收清单审对方交回的东西。
+
+- **第 0 条 / 陷阱**：用户点名执行方 = 收手信号；继续建产物等于替对方干活、两边改动打架。
+- **Step 1 交接件骨架八节**：分工 / 任务书 / 通用化边界 / 经验正文 / 过时信息清单（分「本次要改」与
+  「只登记」）/ 素材出处 / 验收清单（编号逐条可判定，两边共用同一份）/ 待用户拍板项（每项带代价与建议，
+  「回一句就能放行」）/ 交接方式。改名类要求要列全波及面；涉及远端标识符先实测再写。
+- **Step 2 证据规则**：每条经验挂实测证据；没测过的标「待核」并写清核到哪一层；**报错原文照抄**；实例数字
+  标明归属、不写成通用常量；给规则起名，审查时才能指名道姓地核。
+- **Step 3 交付格式**：待办/决策自成一个文档；不在聊天里用「见 §8.1」指代文件小节；附件走 `MEDIA:/绝对
+  路径` 且正文照贴；过程文档与交付物分目录并落定版本。
+- **Step 4 审查**：逐条核清单 + 数字自己复现（对方的总结是自述不是事实）；**对方指出你素材写错时逐条去测、
+  成立就认**；写/改类验证一律在副本上做并回头证明源侧零影响；「装上了」也要自己 `skill_view` 读回
+  `readiness_status` / `linked_files` 与安装记录；审查意见固定形状（一句结论 + 逐条判定表 + 独立复现数字表 +
+  分级建议 + 按依赖序的下一步），只审不改。
+- **陷阱**：任何迁出/改名/删除之后顺手 grep 全部引用旧名的地方；别相信文件名，定位靠实测列目录；提问与
+  回答之间共享状态会变（先 `git status` / `fetch` 再答）；对方可能与你的进程并行跑在同一工作目录。
+
+> 迁移说明：本 skill 原为 rdm-assistance profile 的本地技能（无 lock 条目，由那个会话的 curator 写到
+> 21:39 后稳定），迁入本仓库时**逐字节照抄、未改一字**（`shasum` 两边相等），扫描判决本来就 `safe`。
+> 装进 Hermes 的命令见上面的安装块。
