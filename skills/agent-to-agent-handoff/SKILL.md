@@ -52,6 +52,9 @@ If the two sides still look symmetric, use the asymmetric evidence: whose sessio
 original request, whose profile produced the existing artifacts, whose report the user has been
 answering.
 
+🔴 CHECKPOINT — identity first: touch no file in the shared repo until you know which side you are, and
+never edit the artifact the other side is still writing.
+
 ## Step 2 — Read the whole handoff before building
 
 Handoffs arrive in pieces (page markers such as `(1/2)` / `(2/2)`) plus a long file in the repo. Read
@@ -94,6 +97,28 @@ measurement overturned.
 - Do not self-approve, and do not answer the user's open questions for them: items the handoff routed
   to the user (naming, scope, out-of-repo documents) stay open until the user answers.
 - State plainly what you did **not** do — unpushed commits, artifacts left untracked, tools not yet run.
+
+🔴 CHECKPOINT — do not write "checklist passed" before the checklist has actually run, and do not
+convert a failed item into a passing one.
+🛑 STOP — publishing actions (push, merge, install, category change) wait for **both sides plus the
+user**; a local commit is as far as a lone agent goes on its own.
+
+## When a step fails — branch, do not improvise
+
+Run the first column against reality; each row is a measured failure, not a hypothetical. Take the
+middle column first, the right column only when that fails, and say in the report which row you took.
+
+| trigger | first fix | still failing → fallback |
+|---|---|---|
+| Bot identity unavailable (token request 401 / no reply) | read the token field out of `"$HERMES_HOME/.env"` for that profile and retry the `/users/@me` call | fall back to file evidence: the profile's `logs/agent.log` plus `discord_threads.json` thread ownership; if that is also silent, ask the user which side you are and stop |
+| `logs/agent.log` has no hit for this thread id | grep an inbound-message fragment (first ~40 characters of the message) instead of the thread id, and check for a rotated `agent.log.1` | use the production-side evidence — whose profile produced the artifacts already in the repo |
+| Both sides' evidence is symmetric | do only the half of the message that names you unambiguously, and state the assumption in one line | 🔴 STOP: put both readings to the user and wait for an answer before touching anything |
+| Acceptance checklist script fails (non-zero exit, no interpreter) | hand-run each item: directory name vs frontmatter `name`, description's first 57 chars, every `references/…` link exists, local scan verdict | write the failing items into the delivery report as failed — never reword them into passes |
+| Install scan returns caution | rewrite the flagged literal (see Pitfalls) and rescan; meaning unchanged | report the block and hand it back to the author — a layout/content fix upstream, not a flag to bypass |
+| Install scan returns dangerous | stop editing content; the flag cannot be forced | publish nothing; report the blocked verdict with the finding lines |
+| push rejected (non-fast-forward) | keep the local commit, `git fetch`, and list the diverging commits to the reviewer | do not rebase or force-push; state the unpushed commit plainly in the report |
+| Handoff's numbers disagree with your measurement | write the measured value into the artifact and list "their value vs mine + where I measured it" | if the disagreement changes **what** to build (not just a count), 🔴 STOP and ask the user |
+| A tool the skill names is missing on this machine | complete the equivalent step by hand and label it degraded | never degrade silently: name the item that did not run |
 
 ## Ownership and concurrency rules
 
