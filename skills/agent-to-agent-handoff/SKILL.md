@@ -1,0 +1,126 @@
+---
+name: agent-to-agent-handoff
+description: "Use when another agent shares the task or sends a handoff."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+metadata:
+  hermes:
+    tags: [multi-agent, handoff, review-loop, discord, profiles, collaboration]
+    related_skills: [maintain-hermes-gateway, install-hermes-skills]
+---
+
+# Working a task that another agent shares with you
+
+## When to Use
+
+- One Discord message @-mentions several bots and assigns each a role ("you summarize, they build"), or the user describes a build-then-review loop between two agents.
+- The other agent left a handoff / experience brief / spec in a shared repo and expects you to build
+  from it and hand the project back for review.
+- You are asked to review or approve work another agent produced against a checklist.
+- A repo clone or a profile skill directory is shared with another session and may be edited mid-run.
+
+Several Hermes profiles run as separate bots on this machine, in one guild, over one filesystem. The
+user orchestrates them. Do not infer your role from message order or from who spoke last:
+**every bot mentioned in a message receives it**, so one instruction reaches both sides and each
+side tends to read it as its own job.
+
+## Step 1 — Work out which agent you are, before acting
+
+```bash
+# which profiles this gateway serves, and the per-profile platform state
+cat "$HERMES_HOME/gateway_state.json" | python3 -m json.tool | head -40
+
+# profile -> bot identity: each profile carries its own token; ask Discord who it is
+for f in "$HERMES_HOME/.env" "$HERMES_HOME"/profiles/*/.env; do
+  tok=$(grep -m1 '^DISCORD_BOT_TOKEN=' "$f" | cut -d= -f2- | tr -d '"')
+  [ -n "$tok" ] && { curl -s -H "Authorization: Bot $tok" https://discord.com/api/v10/users/@me \
+    | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("id"), d.get("username"))'; \
+    echo "   ^ $f"; }
+done
+```
+
+`HERMES_HOME` is exported by the CLI and points at this profile's home — write every path below
+through it, and re-derive it if the shell lost it
+(`H="${HERMES_HOME:-$HOME/.hermes}"`, then use `"$H/…"`). Never echo a token — pipe it and print only
+the filtered JSON. Then pin your own session: this profile's gateway log is
+`$HERMES_HOME/logs/agent.log` (a named profile's home carries its own `logs/`); grep the inbound
+message text or the thread id and read its `session=` field. `discord_threads.json` and `channel_directory.json` map a thread id back
+to its chat.
+
+If the two sides still look symmetric, use the asymmetric evidence: whose session carried the
+original request, whose profile produced the existing artifacts, whose report the user has been
+answering.
+
+## Step 2 — Read the whole handoff before building
+
+Handoffs arrive in pieces (page markers such as `(1/2)` / `(2/2)`) plus a long file in the repo. Read
+the file end to end, including its "what I did not verify" rows — those are where your corrections
+come from.
+
+## Step 3 — Build to the handoff's acceptance checklist, and self-check it in code
+
+A reviewer's checklist is usually machine-checkable. Run it and report pass/fail per item instead of
+asserting compliance — `scripts/check_skill_package.py <skill-dir | repo-root>` prints every item
+below per skill (and the local scan verdict) and exits non-zero on any failure:
+
+- directory name equals the SKILL.md frontmatter `name:`
+- `description` opens with a self-contained trigger (`Use when <trigger>. <behaviour>.`) — the first
+  ~57 characters must carry the routing signal on their own, because the index truncates there
+- frontmatter parses as YAML; no unfilled placeholder marker (the checklist script's own word list:
+  the three usual three-letter markers) left behind in any file
+- every `references/…` link in every file resolves to an existing file
+- for a skill-package deliverable, the install scan verdict predicted locally and reported as a
+  verdict — load `install-hermes-skills` and follow its scan-gate reference for the command
+
+## Step 4 — Verify the handoff's own claims; report every discrepancy
+
+This is the currency of the review loop. **Re-measure the handoff's numbers from the live sources
+before writing them into the artifact**, and list each disagreement with the value you measured and
+where you measured it. The spec author wants this; it is the difference between reviewing a document
+and rubber-stamping it.
+
+Drift classes to expect: counts that moved since the brief was written (files added or deleted, rows
+grown); a trap note contradicted by a later finding in the same document; a "current status" section
+that a subsequent fix already invalidated; a flag or default the document describes that a newer
+measurement overturned.
+
+## Step 5 — Deliver, then stay in your role
+
+- Hand the artifact back **through the filesystem** (the shared repo), not through chat prose — the
+  reviewer needs a diff, not a summary.
+- Report in the 4-section shape this user expects: **what you were asked / what you did / effect with
+  measured numbers / what is left**. Lead the effect section with the corrections list. No tables.
+- Do not self-approve, and do not answer the user's open questions for them: items the handoff routed
+  to the user (naming, scope, out-of-repo documents) stay open until the user answers.
+- State plainly what you did **not** do — unpushed commits, artifacts left untracked, tools not yet run.
+
+## Ownership and concurrency rules
+
+- **Commit locally; push only after both sides agree and the user decides.** Step the commits, one
+  logical change each, so the reviewer can read them one at a time.
+- **Never commit the other agent's artifact** (their handoff doc, spec, WIP). Leave it untracked and
+  say so — staging it silently claims authorship and buries their intent.
+- **Stage by pathspec.** A shared clone carries the other agent's unpushed commits and working-tree
+  edits, and `git add -A` sweeps them into your commit.
+- Before editing files the other agent may also touch, `git status` + `git fetch` first, and diff
+  before overwriting a copy that may be ahead of yours.
+
+## Pitfalls
+
+- **A gateway posts its own progress notes into the thread** (running tool calls, "still working"
+  ticks). They read like the other agent's messages — attribute by author id, never by content.
+- **A plan is not the deliverable.** A handoff asks for a built, self-checked artifact; a summary of
+  what you intend to build reads as no progress and wastes the round.
+- **A false `caution` scan verdict is usually a documentation artefact, and a blocked install is a
+  delivery failure.** The scan pattern `inline_shell_exec` is a bang-sign, a backtick, one non-space
+  character, then another backtick — so an error literal ending in a bang-sign, written inside
+  backticks and immediately followed by another code span, trips it. Write such literals (spreadsheet
+  error values, bang-suffixed tokens) without backticks and rescan. Never ship around it by forcing
+  the install.
+- **"Keep this section as it stands" outranks your style preferences.** If the brief asks for
+  verbatim preservation, preserve it and flag the change you would rather make instead of making it
+  unilaterally.
+- **A number from one project instance is evidence, not a constant.** Label every measured figure
+  with the instance it came from; reviewers check exactly this, and "more general" must never cost a
+  measured error string or a concrete digit.
