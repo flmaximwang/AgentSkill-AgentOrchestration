@@ -20,8 +20,8 @@ metadata:
 - You are asked to review or approve work another agent produced against a checklist.
 - A repo clone or a profile skill directory is shared with another session and may be edited mid-run.
 
-Several Hermes profiles run as separate bots on this machine, in one guild, over one filesystem. The
-user orchestrates them. Do not infer your role from message order or from who spoke last:
+Several Hermes profiles run as separate bots on this machine, one guild, one filesystem, orchestrated
+by the user. Do not infer your role from message order or from who spoke last:
 **every bot mentioned in a message receives it**, so one instruction reaches both sides and each
 side tends to read it as its own job.
 
@@ -92,10 +92,9 @@ where you measured it.
 
 This is the currency of the review loop. **Re-measure the handoff's numbers from the live sources
 before writing them into the artifact**, and list each disagreement with the value you measured and
-where you measured it. The spec author wants this; it is the difference between reviewing a document
-and rubber-stamping it.
+where you measured it. The spec author wants this; it separates review from rubber-stamping.
 
-Drift classes measured so far: counts that moved since the brief was written (files added or deleted, rows
+Measured drift classes: counts that moved since the brief was written (files added or deleted, rows
 grown); a trap note contradicted by a later finding in the same document; a "current status" section
 that a subsequent fix already invalidated; a flag or default the document describes that a newer
 measurement overturned.
@@ -162,8 +161,7 @@ middle column first, the right column only when that fails, and say in the repor
   delivery failure.** The scan pattern `inline_shell_exec` is a bang-sign, a backtick, one non-space
   character, then another backtick — so an error literal ending in a bang-sign, written inside
   backticks and immediately followed by another code span, trips it. Write such literals (spreadsheet
-  error values, bang-suffixed tokens) without backticks and rescan. Never ship around it by forcing
-  the install.
+  error values, bang-suffixed tokens) without backticks and rescan. Never force it.
 - **"Keep this section as it stands" outranks your style preferences.** If the brief asks for
   verbatim preservation, preserve it and flag the change you would rather make instead of making it
   unilaterally.
