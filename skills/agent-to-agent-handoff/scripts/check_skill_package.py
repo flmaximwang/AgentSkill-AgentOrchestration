@@ -12,6 +12,10 @@ importable it also prints the local scan verdict (run it with the Hermes venv py
 that line: `<hermes-home>/hermes-agent/venv/bin/python3 check_skill_package.py ...`).
 
 Exit code: 0 when every check passes for every skill, 1 otherwise.
+
+The placeholder word list is matched in markdown *prose* too, so a package whose SKILL.md documents
+this checklist must not spell the three markers verbatim — measured: this package's own checklist
+wording made `check_skill_package.py` FAIL on itself until it was rephrased.
 """
 
 import os
