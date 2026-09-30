@@ -109,14 +109,20 @@ Input: the verified artifact plus the Step 4 discrepancy list. Output: the files
   reviewer needs a diff, not a summary.
 - Report in the 4-section shape this user expects: **what you were asked / what you did / effect with
   measured numbers / what is left**. Lead the effect section with the corrections list. No tables.
-- Do not self-approve, and do not answer the user's open questions for them: items the handoff routed
-  to the user (naming, scope, out-of-repo documents) stay open until the user answers.
 - State plainly what you did **not** do — unpushed commits, artifacts left untracked, tools not yet run.
 
-🔴 CHECKPOINT — do not write "checklist passed" before the checklist has actually run, and do not
-convert a failed item into a passing one.
-🛑 STOP — publishing actions (push, merge, install, category change) wait for **both sides plus the
-user**; a local commit is as far as a lone agent goes on its own.
+🔴 CHECKPOINT — no "checklist passed" without the checklist's own output; a failed item never becomes
+a pass.
+🛑 STOP — publishing (push, merge, install, category change) waits for **both sides plus the user**;
+a local commit is as far as a lone agent goes on its own.
+
+## Never — hard no
+
+- Infer your role from message order, who spoke last, or who is named first: every mentioned bot
+  receives the same message.
+- Answer a question the handoff routed to the user (naming, scope, category, out-of-repo documents).
+- Approve your own build, or restate a failed checklist item as a pass.
+- Degrade silently — name the step that did not run.
 
 ## When a step fails — branch, do not improvise
 
